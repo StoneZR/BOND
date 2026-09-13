@@ -17,22 +17,27 @@ from rdkit import RDLogger
 RDLogger.DisableLog('rdApp.*')
 sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
-# ==================== 一、糖苷分型 (教训#3,4,5,6,7,17a,17b,17d) ====================
+# ==================== 1. Glycosidic linkage typing (lessons #3,4,5,6,7,17a,17b,17d) ====================
 def detect_glycoside(mol):
-    """返回 dict(link=O/C/N/S/ester/free/None, n_rings=糖环数, quininone=醌型C苷)
-    规则(每条注明教训编号):
-      R1 糖环=5/6元,恰1个O,其余C           (糖环定义)
-      R2 环内碳须全脂肪 (教训#4: 黄酮苯并吡喃误判)
-      R3 环上氧取代>=3 (真糖环特征; 2-脱氧糖盲区17c备案,不放宽)
-      R4 异头碳须sp3 (教训#5: 内酯羰基碳误判)
-      R5 连接须单键 (教训#5: 双键氧误判)
-      R6 异头外接O无H: 若该O另一端为带双键O的羰基碳->糖酯ester; 否则O-苷 (教训#6两轮)
-      R7 异头外接O带H->free游离糖,不入苷 (教训#7)
-      R8 C连接: 芳环碳->C-苷; 醌环sp2碳->quinone型C-苷 (盲区17b: 芦荟苷型)
-      R9 N/S连接->N苷/S苷 (盲区17a补齐S)
+    """Type the glycosidic linkage of a molecule.
+
+    Returns dict(link=O/C/N/S/ester/free/None, n_rings=int, quinone_c=bool).
+    Rules (each tagged with its accuracy-testing lesson):
+      R1 sugar ring = 5/6-membered, exactly one O, rest C          (ring definition)
+      R2 ring carbons must be all-aliphatic (lesson #4: flavone benzopyran ring mimics)
+      R3 >=3 ring carbons carry an exocyclic O (true sugar hallmark; 2-deoxy sugars
+         are a documented blind spot 17c, fail-safe excluded)
+      R4 anomeric carbon must be sp3 (lesson #5: lactone carbonyl C mimics)
+      R5 linkage must be a single bond (lesson #5: double-bond O mimics)
+      R6 exocyclic O without H: carbonyl end -> acyl-sugar ester; else O-glycoside (lesson #6)
+      R7 exocyclic O with H -> free reducing sugar, not counted as glycoside (lesson #7)
+      R8 C linkage: aromatic C -> C-glycoside; quinone-ring sp2 C -> aloin-type (17b)
+      R9 N/S linkage -> N- / S-glycoside (blind spot 17a)
     """
     ri = mol.GetRingInfo()
-    n_sugar = 0; link_found = None; quinone_c = False
+    n_sugar = 0
+    link_found = None
+    quinone_c = False
     for ring in ri.AtomRings():
         if len(ring) not in (5, 6): continue
         atoms = [mol.GetAtomWithIdx(i) for i in ring]
@@ -40,10 +45,10 @@ def detect_glycoside(mol):
         cs_ = [a for a in atoms if a.GetSymbol() == 'C']
         if len(os_) != 1 or len(cs_) != len(ring) - 1: continue          # R1
         if any(a.GetIsAromatic() for a in cs_): continue                 # R2
-        # R3(v2.5, 与is_sugar_ring同步): 至少3个环碳带环外O(异头苷氧或羟基);
-        # 排除泛解酸内酯/奎宁酸cyclitol(2个)/2-脱氧糖(盲区17c备案)
-        o_idx_r = os_[0].GetIdx()
-        n_exo_o = sum(1 for c in cs_ if any(nb.GetSymbol() == 'O' and nb.GetIdx() != o_idx_r
+        # R3 (v2.5, synced with is_sugar_ring): >=3 ring carbons carry exocyclic O
+        # (anomeric glycosidic O or hydroxyl); excludes pantolactone rings, quinic-acid
+        # cyclitols (2), and 2-deoxy sugars (blind spot 17c)
+        n_exo_o = sum(1 for c in cs_ if any(nb.GetSymbol() == 'O' and nb.GetIdx() != os_[0].GetIdx()
                                             for nb in c.GetNeighbors()))
         if n_exo_o < 3: continue
         n_sugar += 1
@@ -51,8 +56,9 @@ def detect_glycoside(mol):
         for c in cs_:
             if c.GetHybridization() != Chem.HybridizationType.SP3: continue   # R4
             if o_idx not in [nb.GetIdx() for nb in c.GetNeighbors()]: continue
-            # v2.1(教训#17g, 奎宁酸案例): 真异头碳不含环外羟基O;
-            # cyclitol类(奎宁酸/莽草酸环)的醇碳有环外OH, 其芳环/杂环邻居不代表C-苷
+            # v2.1 (lesson #17g, quinic-acid case): a true anomeric carbon carries no
+            # exocyclic hydroxyl O; cyclitol alcohol carbons do, so their aromatic
+            # neighbors do not imply a C-glycoside
             exo_oh = any(x.GetSymbol() == 'O' and x.GetIdx() != o_idx and x.GetTotalNumHs() >= 1
                          for x in c.GetNeighbors())
             if exo_oh:
@@ -74,17 +80,17 @@ def detect_glycoside(mol):
                                             ob.GetIdx(), bb.GetIdx()).GetBondType() == Chem.BondType.DOUBLE:
                                         link_found = link_found or 'ester'; break   # R6
                             elif ob.GetSymbol() == 'P' or ob.GetSymbol() == 'S':
-                                link_found = link_found or 'ester'                # 磷/硫酸糖酯
+                                link_found = link_found or 'ester'                # phospho/sulfate sugar ester
                         link_found = link_found or 'O'
                 elif sym == 'C':
                     if nb.GetIsAromatic():
-                        link_found = link_found or 'C'                        # R8 芳基C-苷
+                        link_found = link_found or 'C'                        # R8 aryl C-glycoside
                     elif nb.GetHybridization() != Chem.HybridizationType.SP3:
-                        # 盲区17b: 醌型C-苷(aloin型): 异头碳直连sp2非芳碳(醌环/蒽酮环成员)
+                        # blind spot 17b: aloin-type C-glycoside (anomeric C bonded to non-aromatic sp2 carbon)
                         quinone_c = True
                         link_found = link_found or 'C'
                     else:
-                        # 盲区17f: 海藻糖型 1,1-糖-糖C-C桥——外接sp3碳须属于"另一个"糖环(非本环)
+                        # blind spot 17f: trehalose-type sugar-sugar C-C bridge (outer C in a different sugar ring)
                         nb_rings = [r for r in mol.GetRingInfo().AtomRings() if nb.GetIdx() in r]
                         if any(is_sugar_ring(mol, r) for r in nb_rings) and \
                            not any(set(r) == set(ring) for r in nb_rings):
@@ -95,27 +101,27 @@ def detect_glycoside(mol):
                     link_found = link_found or 'S'                            # R9
     return {'link': link_found, 'n_rings': n_sugar, 'quinone_c': quinone_c}
 
-# ==================== 二、非糖 SMARTS (26 项; 教训#1通配写法,#2下标) ====================
+# ==================== 2. Non-glycosidic SMARTS (26 rules; lessons #1 wildcard form, #2 tuple index) ====================
 SP = {
- 'E01_脂肪酯': r'[CX3](=[OX1])[OX2H0][CX4]', 'E02_芳香酯': r'c[CX3](=[OX1])[OX2H0]',
- 'E03_没食子酰': r'c1c(O)c(O)c(C(=[OX1]))c(O)c1',
- 'E04_内酯芳香': r'[#6X3](=[#8X1])[#8X2;R]~[c]', 'E09_内酯脂肪': r'[#6X3](=[#8X1])[#8X2;R]',
- 'E06_磷酸酯': r'[PX4](=[OX1])([OX2])[OX2]', 'E07_硫酸酯': r'[SX4](=[OX1])(=[OX1])([OX2])[OX2]',
- 'E08_硫酯': r'[#6X3](=[#8X1])[#16X2][#6]',
- 'N01_开链酰胺': r'[#6X3](=[#8X1])[#7X3;!R]', 'N02_内酰胺': r'[#6X3](=[#8X1])[#7X3;R]',
- 'N04_肽键': r'[#6X4][#6X3](=[#8X1])[#7X3][#6X4]',
- 'N03_腈': r'[#6]#[#7]',
- 'A01_活化烯': r'[CX3]=[CX3][CX3]=[OX1]', 'A02_桂皮酰烯': r'[c][CX3]=[CX3][CX3]=[OX1]',
- 'A03_共轭二烯': r'[CX3]=[CX3][CX3]=[CX3]', 'A05_炔': r'[#6X2]#[#6X2]',
- 'T01_甲氧基': r'[OX2][CH3]', 'T04_环氧': r'[CX4]1[OX2][CX4]1',
- 'T05_亚甲二氧桥': r'[OX2][CH2][OX2]', 'S01_硫醚': r'[#6][#16X2][#6]', 'S02_二硫': r'[#16X2][#16X2]',
- 'C03a_异戊烯a': r'[c][CX3]([CH3])=[CX3]', 'C03b_异戊烯b': r'[c][CH2][CX3]([CH3])=[CX3]',
+ 'E01_aliphatic_ester': r'[CX3](=[OX1])[OX2H0][CX4]', 'E02_aromatic_ester': r'c[CX3](=[OX1])[OX2H0]',
+ 'E03_galloyl': r'c1c(O)c(O)c(C(=[OX1]))c(O)c1',
+ 'E04_aromatic_lactone': r'[#6X3](=[#8X1])[#8X2;R]~[c]', 'E09_aliphatic_lactone': r'[#6X3](=[#8X1])[#8X2;R]',
+ 'E06_phosphate': r'[PX4](=[OX1])([OX2])[OX2]', 'E07_sulfate': r'[SX4](=[OX1])(=[OX1])([OX2])[OX2]',
+ 'E08_thioester': r'[#6X3](=[#8X1])[#16X2][#6]',
+ 'N01_openchain_amide': r'[#6X3](=[#8X1])[#7X3;!R]', 'N02_lactam': r'[#6X3](=[#8X1])[#7X3;R]',
+ 'N04_peptide': r'[#6X4][#6X3](=[#8X1])[#7X3][#6X4]',
+ 'N03_nitrile': r'[#6]#[#7]',
+ 'A01_activated_alkene': r'[CX3]=[CX3][CX3]=[OX1]', 'A02_cinnamoyl_alkene': r'[c][CX3]=[CX3][CX3]=[OX1]',
+ 'A03_conjugated_diene': r'[CX3]=[CX3][CX3]=[CX3]', 'A05_alkyne': r'[#6X2]#[#6X2]',
+ 'T01_methoxy': r'[OX2][CH3]', 'T04_epoxide': r'[CX4]1[OX2][CX4]1',
+ 'T05_methylenedioxy': r'[OX2][CH2][OX2]', 'S01_thioether': r'[#6][#16X2][#6]', 'S02_disulfide': r'[#16X2][#16X2]',
+ 'C03a_prenyl_a': r'[c][CX3]([CH3])=[CX3]', 'C03b_prenyl_b': r'[c][CH2][CX3]([CH3])=[CX3]',
 }
 SM = {k: Chem.MolFromSmarts(v) for k, v in SP.items()}
 
 
 def is_sugar_ring(mol, ring):
-    """糖环判定: 5/6元、单O、全脂肪碳、环上碳氧取代>=3"""
+    """Sugar-ring test: 5/6-membered, one O, all-aliphatic carbons, >=3 carbons with exocyclic O."""
     if len(ring) not in (5, 6):
         return False
     atoms = [mol.GetAtomWithIdx(i) for i in ring]
@@ -126,14 +132,16 @@ def is_sugar_ring(mol, ring):
         return False
     if any(mol.GetAtomWithIdx(i).GetIsAromatic() for i in cs_):
         return False
-    # v2.5(教训#43+#17g): 真糖环=至少4个环碳带环外O(异头苷氧或羟基);
-    # 排除: 泛解酸内酯环(3碳带O,且环O算两次)、cyclitol环(奎宁酸仅2碳有环外O)、2-脱氧糖(盲区17c备案, 宁可漏不误)
+    # v2.5 (lessons #43 + #17g): a true sugar ring has >=4 ring carbons carrying exocyclic O
+    # (anomeric glycosidic O or hydroxyl). Excludes pantolactone-type lactone rings (3, ring O
+    # counted twice) and quinic-acid cyclitols (2). 2-deoxy sugars = blind spot 17c, fail-safe excluded.
     o_ring = os_idx[0]
     n_exo_o = sum(1 for ci in cs_ if any(nb.GetSymbol() == 'O' and nb.GetIdx() != o_ring
                                          for nb in mol.GetAtomWithIdx(ci).GetNeighbors()))
     if n_exo_o < 3:
         return False
-    # 第12轮锐化: 真糖环必有-CH2-O-型侧臂(羟甲基C5-C6); 区分双四氢呋喃木脂素环(无CH2O侧臂)
+    # round-12 sharpening: a true sugar ring carries a -CH2-O- side arm (hydroxymethyl C5-C6);
+    # distinguishes bis-tetrahydrofuran lignan rings (no CH2O side arm)
     for ci in cs_:
         c_atom = mol.GetAtomWithIdx(ci)
         for nb in c_atom.GetNeighbors():
@@ -145,12 +153,12 @@ def is_sugar_ring(mol, ring):
     return False
 
 def scan_nongly(mol):
-    """返回非糖键型编号集合 (程序判定: 醚/烯按语境程序分型, 芳基C-C程序判定)"""
+    """Return the set of non-glycosidic bond codes (context-aware typing for ethers/alkenes; program-level aryl C-C)."""
     hits = set()
-    # --- 酯族拆分 (E01/E02/E03/E09; E04芳香内酯=内酯含芳环语境) ---
+    # --- Ester family split (E01/E02/E03/E09; E04 aromatic lactone = fused aromatic ring) ---
     ester_p = Chem.MolFromSmarts(r'[#6X3](=[#8X1])[#8X2H0]')
     lactone_p = Chem.MolFromSmarts(r'[#6X3](=[#8X1])[#8X2;R]')
-    galloyl_p = SM['E03_没食子酰']
+    galloyl_p = SM['E03_galloyl']
     if mol.HasSubstructMatch(ester_p):
         ri = mol.GetRingInfo()
         is_lactone = False
@@ -158,7 +166,7 @@ def scan_nongly(mol):
         for match in mol.GetSubstructMatches(lactone_p):
             o_idx = match[2] if len(match) >= 3 else match[1]
             if any(is_sugar_ring(mol, r) for r in ri.AtomRings() if o_idx in r):
-                continue  # 糖羟基成酯非内酯
+                continue  # sugar-hydroxyl esterification, not a lactone
             for ring in ri.AtomRings():
                 if o_idx in ring:
                     is_lactone = True
@@ -177,7 +185,7 @@ def scan_nongly(mol):
             hits.add('E04' if lactone_arom else 'E09')
         else:
             def _aryl_within2(mol, c_idx):
-                # 羰基C的邻居2键内达芳香环(桂皮酰/苯甲酰型)
+                # aryl reachable within 2 bonds of the carbonyl C (cinnamoyl/benzoyl type)
                 for nb in mol.GetAtomWithIdx(c_idx).GetNeighbors():
                     if nb.GetSymbol() != 'C':
                         continue
@@ -198,17 +206,17 @@ def scan_nongly(mol):
                     hits.add('E03')
             else:
                 hits.add('E01')
-    # --- 简单 SMARTS 项 ---
-    simple = {'E06': 'E06_磷酸酯', 'E07': 'E07_硫酸酯', 'E08': 'E08_硫酯', 'N03': 'N03_腈',
-              'A05': 'A05_炔', 'T01': 'T01_甲氧基', 'T04': 'T04_环氧', 'T05': 'T05_亚甲二氧桥',
-              'S01': 'S01_硫醚', 'S02': 'S02_二硫'}
+    # --- simple SMARTS codes ---
+    simple = {'E06': 'E06_phosphate', 'E07': 'E07_sulfate', 'E08': 'E08_thioester', 'N03': 'N03_nitrile',
+              'A05': 'A05_alkyne', 'T01': 'T01_methoxy', 'T04': 'T04_epoxide', 'T05': 'T05_methylenedioxy',
+              'S01': 'S01_thioether', 'S02': 'S02_disulfide'}
     for code, patt in simple.items():
         if SM[patt] is not None and mol.HasSubstructMatch(SM[patt]): hits.add(code)
-    # T01 修正(第12轮): 酯/酸的O-CH3不算甲氧基醚(O须不连羰基碳)
+    # T01 fix (round 12): ester/acid O-CH3 is not a methoxy ether (O must not touch carbonyl C)
     if 'T01' in hits:
         ester_ome = Chem.MolFromSmarts(r'[CX3](=[OX1])[OX2][CH3]')
         if mol.HasSubstructMatch(ester_ome):
-            me_p = SM['T01_甲氧基']
+            me_p = SM['T01_methoxy']
             keep = False
             for match in mol.GetSubstructMatches(me_p):
                 o_atom = mol.GetAtomWithIdx(match[0])
@@ -218,27 +226,28 @@ def scan_nongly(mol):
                     keep = True; break
             if not keep:
                 hits.discard('T01')
-    # --- 酰胺: N01/N02/N04 (N02优先, N04肽键次之, 其余N01) ---
+    # --- Amides: N01/N02/N04 (N02 lactam first, N04 peptide next, else N01) ---
     amide_p = Chem.MolFromSmarts(r'[#6X3](=[#8X1])[#7X3]')
     if mol.HasSubstructMatch(amide_p):
         if mol.HasSubstructMatch(Chem.MolFromSmarts(r'[#6X3](=[#8X1])[#7X3;R]')):
             hits.add('N02')
-        elif mol.HasSubstructMatch(SM['N04_肽键']):
+        elif mol.HasSubstructMatch(SM['N04_peptide']):
             hits.add('N04')
         else:
             hits.add('N01')
-    # --- 烯键分级: A01>A02>A03>A04 ---
+    # --- Alkene grading: A01 > A02 > A03 > A04 ---
     cc_p = Chem.MolFromSmarts(r'[CX3]=[CX3]')
     if mol.HasSubstructMatch(cc_p):
-        if mol.HasSubstructMatch(SM['A01_活化烯']):
+        if mol.HasSubstructMatch(SM['A01_activated_alkene']):
             hits.add('A01')
-            if mol.HasSubstructMatch(SM['A02_桂皮酰烯']): hits.add('A02')
-        elif mol.HasSubstructMatch(SM['A03_共轭二烯']):
+            if mol.HasSubstructMatch(SM['A02_cinnamoyl_alkene']): hits.add('A02')
+        elif mol.HasSubstructMatch(SM['A03_conjugated_diene']):
             hits.add('A03')
         else:
             hits.add('A04')
-    # --- 醚族: T01甲氧基/T02烷基环醚/T03芳基醚 ---
-    # 排除集合: 糖环内O + 苷桥O(异头sp3碳-O-芳环) —— 这些属糖苷语境非独立醚
+    # --- Ether family: T01 methoxy / T02 alkyl-cyclic / T03 aryl ---
+    # exclusion set: sugar-ring O + glycosidic bridge O (anomeric sp3 C-O-aryl);
+    # these belong to the glycoside context, not standalone ethers
     sugar_others = set()
     glycosidic_others = set()
     for r in mol.GetRingInfo().AtomRings():
@@ -255,8 +264,9 @@ def scan_nongly(mol):
         c_nbs = [nb for nb in nbs if nb.GetSymbol() == 'C']
         if len(c_nbs) != 2:
             continue
-        # 苷桥O判据(v13): 环判据收窄为真糖环(is_sugar_ring)
-        # 糖-糖桥: O连两个sp3碳且两碳都在真糖环内; 芳基苷桥: O连芳环C+真糖环内sp3碳
+        # glycosidic-bridge O criteria (v13): ring test narrowed to true sugar rings
+        # sugar-sugar bridge: O bonded to two sp3 carbons both in sugar rings;
+        # aryl-glycoside bridge: O bonded to aromatic C + sp3 C in a sugar ring
         ri_ = mol.GetRingInfo()
 
         def _in_sugaring(ci):
@@ -278,16 +288,16 @@ def scan_nongly(mol):
         o_atom = mol.GetAtomWithIdx(o_idx)
         if any(nb.GetSymbol() == 'C' and not nb.GetIsAromatic() and nb.GetTotalNumHs() == 3
                for nb in o_atom.GetNeighbors()):
-            continue  # 甲氧基归T01
+            continue  # methoxy -> T01
         if any(len(r) == 3 for r in ri.AtomRings() if o_idx in r):
-            continue  # 环氧归T04
+            continue  # epoxide -> T04
         hits.add('T02')
         break
     aryl_d = Chem.MolFromSmarts(r'c[OX2]c')
     aryl_a = Chem.MolFromSmarts(r'c[OX2][CX4]')
-    # 第14轮: T05亚甲二氧桥的芳基O属T05语境, 不重复计T03
+    # round 14: aromatic O of a T05 methylenedioxy bridge belongs to T05, not double-counted as T03
     t05_os = set()
-    for match in mol.GetSubstructMatches(SM['T05_亚甲二氧桥']):
+    for match in mol.GetSubstructMatches(SM['T05_methylenedioxy']):
         t05_os.update(match)
     if mol.HasSubstructMatch(aryl_d):
         for match in mol.GetSubstructMatches(aryl_d):
@@ -302,16 +312,17 @@ def scan_nongly(mol):
             o_atom = mol.GetAtomWithIdx(o_idx)
             if any(nb.GetSymbol() == 'C' and not nb.GetIsAromatic() and nb.GetTotalNumHs() == 3
                    for nb in o_atom.GetNeighbors()):
-                continue  # 甲氧基归T01
+                continue  # methoxy -> T01
             hits.add('T03')
             break
-    # --- 芳基C-C: C01联苯 / C02木脂素 (C03异戊烯 SMARTS) ---
+    # --- Aryl C-C: C01 biphenyl / C02 lignan (C03 prenyl SMARTS) ---
     ri = mol.GetRingInfo()
     for bond in mol.GetBonds():
         a1, a2 = bond.GetBeginAtom(), bond.GetEndAtom()
         if a1.GetIsAromatic() and a2.GetIsAromatic() and not ri.NumBondRings(bond.GetIdx()):
-            # 第13轮: 两端须分属不同的SSSR环; 第15轮: 两端须都在全碳六元芳环(苯环)
-            # 且不邻环氧——色酮/苯并吡喃芳香感知环上外连芳基的键不是可裂解联苯
+            # round 13: different SSSR rings; round 15: both atoms in all-carbon six-membered
+            # aromatic rings, not adjacent to a ring O -- chromenone/benzopyran perceived-aromatic
+            # ring-to-aryl bonds are not cleavable biphenyls
             def _benzene_ok(a):
                 for r in ri.AtomRings():
                     if a.GetIdx() in r and len(r) == 6:
@@ -319,8 +330,7 @@ def scan_nongly(mol):
                         if all(x.GetSymbol() == 'C' and x.GetIsAromatic() for x in ratoms):
                             ring_o = [x for x in ratoms if any(
                                 n.GetSymbol() == 'O' for n in x.GetNeighbors())]
-                            # 该碳本身不邻环内O(环O成员无碳-环含O的六元芳环已排除,双保险:
-                            # 邻居里不含处于同环的O)
+                            # double guard: the carbon must not be adjacent to an aromatic O
                             return True
                 return False
             r1 = [set(r) for r in ri.AtomRings() if a1.GetIdx() in r]
@@ -336,7 +346,7 @@ def scan_nongly(mol):
                 break
     if mol.HasSubstructMatch(Chem.MolFromSmarts(r'[c][CX4;H1,H2][CX4;H1,H2][c]')):
         hits.add('C02')
-    if mol.HasSubstructMatch(SM['C03a_异戊烯a']) or mol.HasSubstructMatch(SM['C03b_异戊烯b']):
+    if mol.HasSubstructMatch(SM['C03a_prenyl_a']) or mol.HasSubstructMatch(SM['C03b_prenyl_b']):
         hits.add('C03')
     return hits
 
@@ -368,19 +378,19 @@ class JudgeResult:
 
 
 def _judge(smiles):
-    """单化合物判定入口: 返回 (键型集合, gly信息, 状态)"""
+    """Single-compound entry point: returns (bond-code set, glycoside info, status)."""
     mol = Chem.MolFromSmiles(smiles) if isinstance(smiles, str) and smiles.strip() else None
     if mol is None:
-        return set(), None, 'SMILES解析失败'
+        return set(), None, 'parse_failed'
     g = detect_glycoside(mol)
     hits = scan_nongly(mol)
-    # 糖苷 -> G 编号
+    # glycoside linkage -> G codes
     if g['link'] == 'O': hits.add('G14')
     elif g['link'] == 'C': hits.add('G16')
     elif g['link'] == 'N': hits.add('G17')
     elif g['link'] == 'S': hits.add('G18')
     elif g['link'] == 'ester': hits.add('E05')
-    # 'free'/None 不入苷
+    # 'free'/None are not counted as glycosides
     return hits, g, 'ok'
 
 def run_table(path, out_path, smiles_col='smiles', name_col='name'):

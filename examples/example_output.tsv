@@ -7,5 +7,5 @@
 	menthol 1-O-glucoside demo	Terpenoids	G14;T02	2	O	1	ok
 	matrine	Alkaloid		0		0	ok
 	arachidonic acid	Lipid	A04	1		0	ok
-	not-a-molecule (broken SMILES demo)	Test		0		0	SMILES解析失败
+	not-a-molecule (broken SMILES demo)	Test		0		0	parse_failed
 	methyl cinnamate	Phenylpropanoids	A01;A02;E02	3		0	ok

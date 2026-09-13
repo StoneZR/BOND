@@ -1,154 +1,82 @@
-# 键本质与酶关联性的四库证据报告
+# How Many Bond Essences Can Be Enzyme-Linked? A Four-Database Evidence Report
 
-> 生成日期：2026-09-13
-> 回答的问题：天然产物的全部化学键中，究竟有多少种"键本质"能够与酶建立关联？依据何在？
-> 数据源（全部本地）：IUBMB/ExPASy ENZYME（`enzyme.dat.txt`+`enzclass.txt`，Release 2026-06-10，SIB，CC BY 4.0）；KEGG 本地反应库（`04_kegg/03reaction_ec.txt`）；BRENDA 微生物酶记录（`brenda_microbe_ec_A_v4.tsv`，156,017 条）；CAZy（`cazy_data_20260724.txt`）
-> 测量脚本：`01classification/01script/04_essence_evidence.py`（全部数字可重跑复核）
-> 配套：`01_键型总表_v1.2.tsv`（46 具体键型 × 16 键本质两列已加）
+> Date: 2026-09-13. Question: among all chemical bonds of natural products, how many "bond essences" can be linked to enzymes, and on what evidence?
+> Databases (all local snapshots): IUBMB/ExPASy ENZYME (`enzyme.dat` + `enzclass`, release 2026-06-10, SIB, CC BY 4.0); KEGG reaction set (9,711 EC-annotated reactions); BRENDA microbial enzyme records (156,017); CAZy (524 families, 2026-07-24 snapshot).
+> Every number below is reproducible with the measurement script archived in the working repository.
 
 ---
 
-## 一、结论摘要
+## 1. Verdict
 
-1. **在天然产物主域（植物次生代谢物及其肠道/微生物转化）内，具备官方酶学锚点的键本质共 16 种**；其中 15 种在 IUBMB 有以该键为专一性的官方条目（含 C-糖苷键 2 条，跨类分布于氧化还原/裂解酶类，v1.3 更正），仅炔键无条目（保留为标记型）。
-2. **全域（含海洋/真菌天然产物）再补 2 种边缘本质备案**：卤键 C–X（EC 3.8 官方大类位，本数据频次≈0）、过氧键 O–O（无条目级锚点）。合计 18 种候选，主域收录 16 种。
-3. 四个数据库从**四个独立视角**给出一致结论：官方分类位（IUBMB"按被作用键"亚类）、反应宇宙（KEGG）、微生物实例（BRENDA）、家族体系（CAZy）。
-4. **反面事实同样成立**：骨架键（C–C/C–H/C–O 单键）没有"以断裂该键为专一性"的酶——它们的酶转化走位点层氧化/羟基化（EC 1.14 共 845 条，全部按底物/位点命名，无一按键命名）。这证明 16 种不是"漏数了"，而是酶学条目结构的客观边界。
+**In the natural-product domain (plant specialized metabolism and its microbial transformation), 16 bond essences have enzymatic anchors**; adding 2 domain-edge essences (halide C-X, peroxide O-O) gives 18 candidates, of which 16 are catalogued.
 
-## 二、16 种键本质清单（46 行的归并）
+## 2. The 16 bond essences (46 codes collapse into 16)
 
-| # | 键本质 | 覆盖具体键型 | 行数 | 语境维度枚举 |
-|---|---|---|---|---|
-| 1 | O-糖苷键 | G01–G15 | 15 | 糖种（β-D-葡萄糖/α-L-鼠李糖/…）× 位置（苷元位/糖链位）× 构型 |
-| 2 | C-糖苷键 | G16 | 1 | 杂原子=C（芳环） |
-| 3 | N-糖苷键 | G17 | 1 | 杂原子=N（碱基） |
-| 4 | S-糖苷键 | G18 | 1 | 杂原子=S |
-| 5 | 羧酸酯键 | E01–E05、E09 | 6 | 酰基语境（脂肪/芳香/没食子酰）× 环（开链/环内×芳香稠合）× 醇侧（糖异头 O） |
-| 6 | 磷酸酯键 | E06 | 1 | 磷酰基 |
-| 7 | 硫酸酯键 | E07 | 1 | 硫酰基 |
-| 8 | 硫酯键 | E08 | 1 | 酰基-S |
-| 9 | 酰胺键 | N01、N02、N04 | 3 | 环（开链/环内）× N 语境（非肽/肽） |
-| 10 | 腈键 | N03 | 1 | C≡N |
-| 11 | 烯键 | A01–A04 | 4 | 共轭语境（活化/桂皮酰/二烯/孤立） |
-| 12 | 炔键 | A05 | 1 | C≡C |
-| 13 | 醚键 | T01–T05 | 5 | 取代（甲基/烷基/芳基）× 环（三元环氧/亚甲二氧桥/无） |
-| 14 | 硫醚键 | S01 | 1 | C–S–C |
-| 15 | 二硫键 | S02 | 1 | S–S |
-| 16 | 芳基 C–C 键 | C01–C03 | 3 | 连接语境（联苯/木脂素/异戊烯基） |
-
-**"苷元位/糖链位是同一化学键、不同位置语境"**——本表通过"键本质+语境维度"两列显式表达这一结构：46 行 = 16 种本质 × 各自语境在酶学分辩率下的展开。
-
-## 三、IUBMB/ExPASy 证据（官方分类位视角）
-
-EC 分类的官方"按被作用键"大类位全部清单：3.1 酯、3.2 糖苷、3.3 醚、3.4 肽、3.5 碳氮（含 3.5.5 腈）、3.6 酸酐、3.7 碳碳（酮体）、3.8 卤键；非水解键由 1.3（CH–CH）、1.8（硫）、2.5.1（烷基/芳基转移）、4.2.1（水合）覆盖。与天然产物化学空间求交集并实测各本质的条目数：
-
-| 键本质 | IUBMB 条目数 | 键本质 | IUBMB 条目数 |
-|---|---|---|---|
-| 酰胺键（3.4+3.5.1+3.5.2） | **719** | 二硫键（1.8.4） | 16 |
-| 烯键（1.3+4.2.1） | **430** | 醚键（3.3.2） | 15 |
-| O-糖苷键（3.2.1） | **232** | 腈键（3.5.5） | 8 |
-| 磷酸酯键（3.1.3+3.1.4） | 181 | 硫醚键（3.3.1） | 3 |
-| 羧酸酯键（3.1.1） | 126 | S-糖苷键（3.2.3） | 1 |
-| 芳基 C–C 键（1.10.3+1.11.1） | 47 | C-糖苷键（1.1.3.50+4.1.99.28，跨类） | 2 |
-| 硫酯键（3.1.2） | 35 | 炔键 | 0 |
-| N-糖苷键（3.2.2） | 32 | 硫酸酯键（3.1.6） | 22 |
-
-解读：酰胺/烯/糖苷三类条目最多，但**条目多≠键语境分辨率高**（酰胺 719 条中肽酶按底物蛋白命名、烯还原按供体命名——见总表 2.3 节分析）；此处的意义是**证明每种本质都有官方条目背书**。C-糖苷键的 2 条条目跨类分布于氧化还原酶（1.1.3.50）与裂解酶（4.1.99.28）而非糖苷酶类——v1.3 更正：此前按糖苷酶类前缀统计误报为 0。
-
-## 四、KEGG 证据（反应宇宙视角）
-
-本地反应库带 EC 注释的反应共 **9,711** 个，按 EC 前缀映射到 16 本质：
-
-| 键本质 | KEGG 反应数 | 键本质 | KEGG 反应数 |
-|---|---|---|---|
-| 烯键 | **655** | 醚键 | 32 |
-| O-糖苷键 | **272** | N-糖苷键 | 31 |
-| 酰胺键 | **241** | 二硫键 | 19 |
-| 磷酸酯键 | 208 | 腈键 | 14 |
-| 羧酸酯键 | 189 | 硫酸酯键 | 26 |
-| 芳基 C–C 键 | 70 | 硫醚键 / S-糖苷键 / 炔键 | 0 |
-| 硫酯键 | 53 | **C-糖苷键 | 2（R13033/R13184，断 C–C 糖键）** | |
-
-未映射到 16 本质的反应 7,904 个（81%）——主体是初级代谢氧化还原（醇/醛/酮转化、辅酶反应等），即"位点层"化学。**这组数字同时是第二步"酶→键型作用谱"的接口预演**：约 1,800 个带 EC 的反应可直接落到 16 本质上参与键级关联。
-
-## 五、BRENDA 证据（微生物实例视角——对肠道场景最关键）
-
-BRENDA 微生物酶记录共 **156,017** 条，按本质锚点 EC 统计：
-
-| 键本质 | 微生物记录数 | 占比 | 键本质 | 微生物记录数 | 占比 |
+| # | Essence | Codes | # | Essence | Codes |
 |---|---|---|---|---|---|
-| O-糖苷键 | **19,116** | 12.3% | 腈键 | 1,183 | 0.8% |
-| 酰胺键 | **15,785** | 10.1% | N-糖苷键 | 780 | 0.5% |
-| 羧酸酯键 | 7,481 | 4.8% | 硫酯键 | 511 | 0.3% |
-| 烯键 | 5,572 | 3.6% | 二硫键 | 368 | 0.2% |
-| 磷酸酯键 | 3,951 | 2.5% | 硫酸酯键 | 249 | 0.2% |
-| 芳基 C–C 键 | 3,334 | 2.1% | 醚键 | 151 | 0.1% |
-| | | | 炔/硫醚/S-糖苷 | 0 | — |
-| **C-糖苷键（1.1.3.50+4.1.99.28）** | | | | **10（各 5 条）** | <0.1% |
+| 1 | O-glycosidic | G01-G15 (15) | 9 | amide | N01, N02, N04 (3) |
+| 2 | C-glycosidic | G16 | 10 | nitrile | N03 |
+| 3 | N-glycosidic | G17 | 11 | alkene | A01-A04 (4) |
+| 4 | S-glycosidic | G18 | 12 | alkyne | A05 |
+| 5 | carboxylic ester | E01-E05, E09 (6) | 13 | ether | T01-T05 (5) |
+| 6 | phosphate ester | E06 | 14 | thioether | S01 |
+| 7 | sulfate ester | E07 | 15 | disulfide | S02 |
+| 8 | thioester | E08 | 16 | aryl C-C | C01-C03 (3) |
 
-解读：16 本质合计覆盖约 37.5% 的微生物酶记录（其余为初级代谢）。**O-糖苷键以 19,116 条（12.3%）居首**——微生物界为糖苷键配的酶远多于其他任何键本质，这是"糖苷键族能分最细、且在肠道转化中最活跃"的微生物学直接证据。
+46 codes = 16 essences expanded by their **context dimensions** (sugar species, linkage position, acyl environment, conjugation, ring fusion) at enzymological resolution. Codes sharing one essence are the same chemical bond in different enzyme-recognizable contexts.
 
-## 六、CAZy 证据（家族体系视角——反向证明）
+## 3. Four independent database perspectives
 
-CAZy 本库共 **524 个家族**：GH 187、GT 138、CBM 114、PL 43、CE 23、AA 19。按本质归类：
+### IUBMB (official classification)
+Bond-acting EC positions: 3.1 esters, 3.2 glycosides, 3.3 ethers, 3.4 peptide, 3.5 C-N (3.5.5 nitrile), 3.6 anhydrides, 3.7 C-C (keto-acids), 3.8 halides; non-hydrolytic: 1.3 (CH-CH), 1.8 (sulfur), 2.5.1 (prenyl transfer), 4.2.1 (hydration). Entries per essence: amide 719, alkene 430, O-glycosidic 232, phosphate 181, carboxylic ester 126, aryl C-C 47, thioester 35, N-glycosidic 32, sulfate 22, disulfide 16, ether 15, nitrile 8, thioether 3, S-glycosidic 1, **C-glycosidic 2** (EC 1.1.3.50 C-glycoside oxidase + 4.1.99.28 deglycosidase — cross-class entries in oxidoreductases/lyases, not glycosidases), alkyne 0.
 
-| CAZy 大类 | 家族数 | 对应键本质 | 作用 |
-|---|---|---|---|
-| GH（糖苷水解） | 187 | O-糖苷键 | 降解 |
-| GT（糖基转移） | 138 | O-糖苷键 | 合成 |
-| PL（裂解酶） | 43 | O-糖苷键（糖醛酸键） | 降解 |
-| CE（碳水化合物酯酶） | 23 | 羧酸酯键（碳水语境） | 降解 |
-| AA（辅助氧化） | 19 | 芳基 C–C/醚键语境（漆酶/裂解性多糖单加氧酶） | 氧化 |
-| CBM（结合模块） | 114 | —（非酶模块） | — |
+### KEGG (reaction universe)
+Of 9,711 EC-annotated reactions, ~1,800 map to the 16 essences: alkene 655, O-glycosidic 272, amide 241, phosphate 208, carboxylic ester 189, aryl C-C 70, thioester 53, N-glycosidic 31, ether 32, sulfate 26, disulfide 19, nitrile 14, C-glycosidic 2 (R13033/R13184). The remaining 7,904 reactions are primary-metabolism redox chemistry (site-level, not bond-cleavage).
 
-**CAZy 整个数据库的宇宙只覆盖约 2.5 种键本质**（O-糖苷+羧酸酯+辅助氧化）——从反面证明：糖苷与酯是酶学装备最厚的两种本质（值得专建家族库），而其余 13-14 种本质的酶学散布在 EC 各处（BRENDA/KEGG 可查），这正是本体系必须以 EC 为主锚、CAZy 为糖苷/酯增强的原因。
+### BRENDA (microbial instances — most relevant for gut context)
+O-glycosidic **19,116 records (12.3%)** — the largest enzyme arsenal of any essence; amide 15,785; carboxylic ester 7,481; alkene 5,572; phosphate 3,951; aryl C-C 3,334; nitrile 1,183; N-glycosidic 780; thioester 511; disulfide 368; sulfate 249; ether 151; C-glycosidic 10.
 
-## 七、边缘本质备案（全域完整性）
+### CAZy (family system — the negative-space argument)
+CAZy's entire universe (GH 187, GT 138, CBM 114, PL 43, CE 23, AA 19) covers only ~2.5 essences (O-glycosidic + carbohydrate-context esters + auxiliary oxidative). This is the strongest demonstration that glycosidic and ester bonds carry the thickest enzymatic equipment — and that the remaining essences must be anchored through EC (which is why BOND uses EC as primary anchor, CAZy as glycoside/ester reinforcement).
 
-| 边缘本质 | 官方锚点 | 本域频次 | 处置 |
-|---|---|---|---|
-| 卤键 C–X | EC 3.8"acting on halide bonds"（13 条：haloalkane dehalogenase 3.8.1.5、haloacetate dehalogenase 3.8.1.3 等） | ≈0（卤代天然产物集中于海洋/真菌域） | 备案不立行（审订记录 #39）；数据集扩展到海洋 NP 时按准入规则升版 |
-| 过氧键 O–O | 无条目级锚点 | ≈0（青蒿素型内过氧化物） | 备案（同上） |
+## 4. Cross-database consistency
 
-## 八、反面陈述：骨架键为何不进体系（证据）
-
-EC 1.14（CYP 类加氧酶，作用于 C–H/C–C 位点）共 **845 条**，随机抽样名称：
-
-> procollagen-lysine 5-dioxygenase（1.14.11.4）、L-arginine hydroxylase（1.14.11.41）、kanamycin B dioxygenase（1.14.11.37）、L-isoleucine 4-hydroxylase（1.14.11.45）、pentalenolactone F synthase（1.14.11.36）……
-
-**全部按底物/位点命名，没有一条以"断裂某个骨架键"命名**——这类酶的工作方式是"在特定位点上整体加氧/羟基化"，不是"切断某个键"。因此骨架键的酶转化属**位点层**（官能团引入/氧化，legacy 01 系列 4.3 修饰位点表已覆盖），不进"键本质-酶"关联体系。这不是设计偷懒，是两类酶学事实的客观分界。
-
-## 九、四库交叉一致性总表
-
-"非零库数"= 四个证据列（IUBMB 条目 / KEGG 反应 / BRENDA 微生物记录 / CAZy 家族）中数值非零的列数，为客观计数：
-
-| 键本质 | IUBMB 条目 | KEGG 反应 | BRENDA 微生物记录 | CAZy 家族 | 非零库数 |
+| Essence | IUBMB | KEGG | BRENDA | CAZy | Non-zero DBs |
 |---|---|---|---|---|---|
-| O-糖苷键 | 232 | 272 | 19,116 | GH187+GT138+PL43 | **4/4** |
-| 羧酸酯键 | 126 | 189 | 7,481 | CE23 | **4/4** |
-| 芳基 C–C 键 | 47 | 70 | 3,334 | AA19（辅助氧化语境） | **4/4**（CAZy 为辅助语境） |
-| 酰胺键 | 719 | 241 | 15,785 | — | 3/4 |
-| 烯键 | 430 | 655 | 5,572 | — | 3/4 |
-| 磷酸酯键 | 181 | 208 | 3,951 | — | 3/4 |
-| N-糖苷键 | 32 | 31 | 780 | — | 3/4 |
-| 硫酯键 | 35 | 53 | 511 | — | 3/4 |
-| 腈键 | 8 | 14 | 1,183 | — | 3/4 |
-| 硫酸酯键 | 22 | 26 | 249 | — | 3/4 |
-| 二硫键 | 16 | 19 | 368 | — | 3/4 |
-| 醚键 | 15 | 32 | 151 | — | 3/4 |
-| 硫醚键 | 3 | 0 | 0 | — | 1/4 |
-| S-糖苷键 | 1 | 0 | 0 | — | 1/4 |
-| C-糖苷键 | 2（跨类：1.1.3.50+4.1.99.28） | 2（R13033/R13184） | 10 | — | **3/4**（v1.3 更正） |
-| 炔键 | 0 | 0 | 0 | — | 0/4（无锚点，标记型） |
+| O-glycosidic | 232 | 272 | 19,116 | GH+GT+PL (368) | **4/4** |
+| carboxylic ester | 126 | 189 | 7,481 | CE (23) | **4/4** |
+| aryl C-C | 47 | 70 | 3,334 | AA (19, auxiliary) | **4/4** |
+| amide | 719 | 241 | 15,785 | — | 3/4 |
+| alkene | 430 | 655 | 5,572 | — | 3/4 |
+| phosphate ester | 181 | 208 | 3,951 | — | 3/4 |
+| N-glycosidic | 32 | 31 | 780 | — | 3/4 |
+| thioester | 35 | 53 | 511 | — | 3/4 |
+| nitrile | 8 | 14 | 1,183 | — | 3/4 |
+| sulfate ester | 22 | 26 | 249 | — | 3/4 |
+| disulfide | 16 | 19 | 368 | — | 3/4 |
+| ether | 15 | 32 | 151 | — | 3/4 |
+| C-glycosidic | 2 | 2 | 10 | — | 3/4 |
+| thioether | 3 | 0 | 0 | — | 1/4 |
+| S-glycosidic | 1 | 0 | 0 | — | 1/4 |
+| alkyne | 0 | 0 | 0 | — | 0/4 (marker-only) |
 
-**13/16 种本质在 ≥3 库有非零证据**（其中 3 种四库全满）；硫醚与 S-糖苷仅官方条目一库（1/4）；C-糖苷键 3/4 库（v1.3 更正，锚点跨类分布于氧化还原/裂解酶类）；炔键为唯一零证据本质（标记型），如实保留不虚报。库数之外的**证据量级**另见各列绝对值（如 O-糖苷 19,116 条微生物记录 vs 醚键 151 条，相差两个数量级——量级信息反映酶学装备厚度，已体现于数值列本身，不再并入评级）。
+**13/16 essences have non-zero evidence in >=3 databases.** Thioether and S-glycosidic rest on official entries only; alkyne is marker-only. No essence is claimed beyond its evidence.
 
-## 十、结论与适用边界
+## 5. The negative statement (why skeleton bonds are excluded)
 
-1. **"能与酶建立条目级关联的天然产物键本质 = 主域 16 种（14 种有官方条目 + 2 种文献/无锚点如实降级）+ 全域边缘 2 种备案"**——此结论由四个独立数据库交叉支撑，全部数字可由 `04_essence_evidence.py` 重跑复核。
-2. 适用边界：主域=植物次生代谢物及其肠道/微生物转化（本项目侧柏+粪便数据所在域）；数据集扩展到海洋/真菌天然产物时，卤键等边缘本质按准入规则升版收录。
-3. 该报告同时是软件第二步（酶→键型作用谱）的依据：KEGG 约 1,800 个带 EC 反应可直接按本质归类接入，BRENDA 微生物记录数将作为"酶×键型"表的微生物丰度先验。
+EC 1.14 (CYP-type oxygenases) contains 845 entries — all named by substrate/position (procollagen-lysine 5-dioxygenase, L-arginine hydroxylase, kanamycin B dioxygenase, ...), **none by bond cleavage**. Skeleton C-C/C-H/C-O bonds are transformed by site-level hydroxylation/oxidation, not bond scission; they belong to a site layer (functional-group modification), not the bond-essence layer. The 16-essence boundary is therefore the objective structure of enzymology, not an omission.
+
+## 6. Domain edges (recorded, not catalogued)
+
+| Edge essence | Anchor | Frequency in terrestrial-plant data | Disposition |
+|---|---|---|---|
+| halide C-X | EC 3.8 (13 entries, e.g. haloalkane dehalogenase 3.8.1.5) | ~0 (marine/fungal domain) | recorded; admitted on dataset expansion |
+| peroxide O-O | no entry-level anchor | ~0 (artemisinin-type) | recorded |
+
+## 7. Use in BOND
+
+The ~1,800 KEGG reactions and 156,017 BRENDA records mapped to the 16 essences are the data source for the next BOND layer: the **enzyme-to-bond action spectrum** (enzyme x bond code x direction), which is the interface that connects metabolite bond profiles to metagenomic KO/CAZy abundances.
 
 ---
 
-*报告完。下一步待确认：第二步"酶→键型作用谱"构建。*
+*All figures reproducible with the archived measurement script. Database versions: IUBMB/ExPASy ENZYME 2026-06-10; KEGG local snapshot 2026-08; BRENDA microbial subset v4; CAZy 2026-07-24.*
