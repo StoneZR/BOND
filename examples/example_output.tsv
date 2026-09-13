@@ -1,0 +1,11 @@
+﻿compound_id	name	superclass	bond_codes	n_bond_types	glycosidic_linkage	n_sugar_rings	status
+	phenyl beta-D-glucoside demo	Phenylpropanoids	G14	1	O	1	ok
+	coumarin	Phenylpropanoids	E04	1		0	ok
+	quercetin	Phenylpropanoids		0		0	ok
+	chlorogenic acid	Phenylpropanoids	A01;A02;E02;T02	4		0	ok
+	sesamin	Lignan	C02;T01;T02;T03;T04	5		0	ok
+	menthol 1-O-glucoside demo	Terpenoids	G14;T02	2	O	1	ok
+	matrine	Alkaloid		0		0	ok
+	arachidonic acid	Lipid	A04	1		0	ok
+	not-a-molecule (broken SMILES demo)	Test		0		0	SMILES解析失败
+	methyl cinnamate	Phenylpropanoids	A01;A02;E02	3		0	ok

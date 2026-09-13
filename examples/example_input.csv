@@ -1,0 +1,11 @@
+compound_id,name,superclass,smiles
+EX001,phenyl beta-D-glucoside demo,Phenylpropanoids,OC[C@H]1O[C@@H](Oc2ccccc2)[C@H](O)[C@@H](O)[C@@H]1O
+EX002,coumarin,Phenylpropanoids,O=C1OC2=CC=CC=C2C=C1
+EX003,quercetin,Phenylpropanoids,O=c1c(O)c(-c2ccc(O)cc2)oc2cc(O)cc(O)c12
+EX004,chlorogenic acid,Phenylpropanoids,O=C(/C=C/c1ccc(O)c(O)c1)O[C@@H]1[C@H](O)[C@@H](O[C@H]1CO)C(=O)O
+EX005,sesamin,Lignan,COc1ccc2c(c1)OC(C1COC(C2CO)c2ccc(OC)cc2)O1
+EX006,menthol 1-O-glucoside demo,Terpenoids,CC(C)C1CCC(C)CC1OC2OC(CO)C(O)C(O)C2O
+EX007,matrine,Alkaloid,C[C@H]1CCC2CCN3CCC(C2)C3[C@H]1O
+EX008,arachidonic acid,Lipid,CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC(O)=O
+EX009,not-a-molecule (broken SMILES demo),Test,not_a_valid_smiles(((
+EX010,methyl cinnamate,Phenylpropanoids,COC(=O)/C=C/c1ccccc1
